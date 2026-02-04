@@ -19,6 +19,7 @@
             <div class="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-600"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
+            <p class="text-sm text-slate-500 mb-2">割り勘アプリ</p>
             <h1 class="text-2xl font-bold text-slate-900">アクセス権限がありません</h1>
             <p class="text-slate-500 mt-2">このアプリは許可されたユーザーのみ利用できます</p>
         </div>
@@ -72,6 +73,9 @@
                 </button>
             </div>
         </div>
+
+        <!-- フッター -->
+        <p class="text-center text-sm text-slate-400 mt-8">&copy; 2026 Warikane App</p>
     </div>
 
     <script src="js/config.js"></script>
@@ -121,8 +125,20 @@
                             <p class="font-medium">申請が拒否されました</p>
                             <p class="text-sm mt-1">管理者にお問い合わせください</p>
                         </div>
+                        <button id="retry-btn" class="w-full mt-4 bg-amber-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-amber-700 transition-colors">
+                            再申請する
+                        </button>
                     `;
                     requestStatus.classList.remove('hidden');
+
+                    // 再申請ボタンのイベントリスナー
+                    document.getElementById('retry-btn').addEventListener('click', async () => {
+                        // 古い申請を削除
+                        await db.from('access_requests').delete().eq('email', user.email);
+                        // フォームを再表示
+                        requestStatus.classList.add('hidden');
+                        requestForm.classList.remove('hidden');
+                    });
                 }
             }
 
@@ -152,6 +168,9 @@
 
                 requestForm.classList.add('hidden');
                 alreadyRequested.classList.remove('hidden');
+
+                // 申請フラグをsessionStorageに保存（承認通知用）
+                sessionStorage.setItem('pendingAccessRequest', 'true');
             });
 
             // ログアウト

@@ -231,6 +231,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         showSuccess('ユーザーを削除しました');
     }
 
+    // 承認メールを送信
+    async function sendApprovalEmail(email, name) {
+        try {
+            const appUrl = window.location.origin + '/index.html';
+            const { data, error } = await db.functions.invoke('send-approval-email', {
+                body: {
+                    to: email,
+                    name: name || email.split('@')[0],
+                    appUrl: appUrl
+                }
+            });
+
+            if (error) {
+                console.error('メール送信エラー:', error);
+                return false;
+            }
+            return true;
+        } catch (err) {
+            console.error('メール送信エラー:', err);
+            return false;
+        }
+    }
+
     // 申請を承認
     async function approveRequest(id) {
         const request = state.accessRequests.find(r => r.id === id);
@@ -256,11 +279,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             reviewed_by: user.email
         }).eq('id', id);
 
+        // 承認メールを送信
+        const emailSent = await sendApprovalEmail(request.email, request.name);
+
         // 一覧を更新
         state.accessRequests = state.accessRequests.filter(r => r.id !== id);
         renderAccessRequests();
         loadAllowedUsers();
-        showSuccess(`${request.email} を承認しました`);
+
+        if (emailSent) {
+            showSuccess(`${request.email} を承認し、通知メールを送信しました`);
+        } else {
+            showSuccess(`${request.email} を承認しました（メール送信は失敗）`);
+        }
     }
 
     // 申請を拒否

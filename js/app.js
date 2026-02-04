@@ -11,6 +11,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (loadingIndicator) loadingIndicator.classList.add('hidden');
     if (mainContent) mainContent.classList.remove('hidden');
 
+    // 承認通知をチェック
+    if (sessionStorage.getItem('pendingAccessRequest') === 'true') {
+        sessionStorage.removeItem('pendingAccessRequest');
+        showApprovalToast();
+    }
+
     // ユーザー情報を表示
     displayUserInfo(user);
 
@@ -422,6 +428,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         state.transactions = [];
         render();
+    }
+
+    // 承認通知トースト表示
+    function showApprovalToast() {
+        const toastContainer = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-in';
+        toast.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span>アクセスが承認されました！</span>
+            <button class="ml-auto hover:bg-green-600 rounded p-1" onclick="this.parentElement.remove()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        `;
+        toastContainer.appendChild(toast);
+
+        // 5秒後に自動で消える（承認は長めに表示）
+        setTimeout(() => {
+            toast.classList.add('animate-slide-out');
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
     }
 
     // エラー表示（トースト通知）
