@@ -61,6 +61,44 @@ const Auth = {
         });
     },
 
+    // メールアドレスが許可リストにあるかチェック（DB）
+    async isEmailAllowed(email) {
+        // 管理者メールは常に許可
+        if (email === CONFIG.ADMIN_EMAIL) {
+            return { allowed: true, isAdmin: true };
+        }
+
+        const { data, error } = await db
+            .from('allowed_users')
+            .select('email, is_admin')
+            .eq('email', email)
+            .single();
+
+        if (error || !data) {
+            return { allowed: false, isAdmin: false };
+        }
+        return { allowed: true, isAdmin: data.is_admin };
+    },
+
+    // 管理者を初期登録（存在しなければ）
+    async ensureAdminExists() {
+        if (!CONFIG.ADMIN_EMAIL) return;
+
+        const { data } = await db
+            .from('allowed_users')
+            .select('email')
+            .eq('email', CONFIG.ADMIN_EMAIL)
+            .single();
+
+        if (!data) {
+            await db.from('allowed_users').insert({
+                email: CONFIG.ADMIN_EMAIL,
+                is_admin: true,
+                added_by: 'system'
+            });
+        }
+    },
+
     // 認証ガード（未認証時にログインページへリダイレクト）
     async requireAuth() {
         const user = await this.getCurrentUser();
@@ -68,6 +106,20 @@ const Auth = {
             window.location.href = 'login.html';
             return null;
         }
+
+        // 管理者の初期登録を試行
+        await this.ensureAdminExists();
+
+        // ホワイトリストチェック
+        const { allowed, isAdmin } = await this.isEmailAllowed(user.email);
+        if (!allowed) {
+            await this.signOut();
+            sessionStorage.setItem('auth_error', 'このアカウントは許可されていません');
+            return null;
+        }
+
+        // ユーザーオブジェクトにisAdmin情報を追加
+        user.isAdmin = isAdmin;
         return user;
     },
 

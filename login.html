@@ -115,6 +115,15 @@
             // 既にログイン済みならリダイレクト
             await Auth.redirectIfAuthenticated();
 
+            // sessionStorageからエラーメッセージを取得して表示
+            const authErrorMsg = sessionStorage.getItem('auth_error');
+            if (authErrorMsg) {
+                sessionStorage.removeItem('auth_error');
+                const authError = document.getElementById('auth-error');
+                authError.textContent = authErrorMsg;
+                authError.classList.remove('hidden');
+            }
+
             // DOM要素
             const loginTab = document.getElementById('login-tab');
             const signupTab = document.getElementById('signup-tab');

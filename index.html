@@ -208,8 +208,28 @@
                 </form>
             </section>
 
+            <!-- 管理者専用: ユーザー管理エリア -->
+            <section id="admin-section" class="hidden bg-white p-6 rounded-2xl shadow-lg border border-amber-200 fade-in" style="animation-delay: 0.2s;">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-amber-100 text-amber-600 p-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-900">ユーザー管理</h2>
+                    <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">管理者専用</span>
+                </div>
+                <div id="allowed-users-list" class="space-y-2 mb-4">
+                    <!-- JSで動的に追加 -->
+                </div>
+                <div class="flex gap-2">
+                    <input type="email" id="new-user-email" placeholder="メールアドレスを入力" class="flex-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                    <button id="add-user-btn" class="bg-amber-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-700 transition-colors">
+                        追加
+                    </button>
+                </div>
+            </section>
+
             <!-- 3. 会計履歴エリア -->
-            <section class="bg-white p-6 rounded-2xl shadow-lg border border-slate-200 fade-in" style="animation-delay: 0.2s;">
+            <section class="bg-white p-6 rounded-2xl shadow-lg border border-slate-200 fade-in" style="animation-delay: 0.3s;">
                  <div class="flex items-center justify-between">
                      <div class="flex items-center gap-3">
                          <div class="bg-green-100 text-green-600 p-2 rounded-lg">

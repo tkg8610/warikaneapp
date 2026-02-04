@@ -10,7 +10,10 @@ const CONFIG = {
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6d2R0cHptcXdwZXpxaHBmZWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxODAyMjcsImV4cCI6MjA4NTc1NjIyN30.8wcne9jT3tfLUGYjxZuGwM_QkctFmjFsHycjxUqkp-0',
 
     // サイトURL（OAuth リダイレクト用）
-    SITE_URL: window.location.origin
+    SITE_URL: window.location.origin,
+
+    // 初期管理者のメールアドレス
+    ADMIN_EMAIL: 'pancakes.99.cr@gmail.com'
 };
 
 // 環境変数をグローバルにエクスポート
