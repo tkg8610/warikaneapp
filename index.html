@@ -49,6 +49,9 @@
                     <button id="add-member-btn" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
                         追加
                     </button>
+                    <button id="reset-members-btn" class="bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors">
+                        リセット
+                    </button>
                 </div>
             </section>
 
@@ -97,7 +100,12 @@
 
                     <!-- Yモード専用入力 -->
                     <div id="y-mode-fields" class="hidden space-y-3 pt-3 border-t border-slate-200">
-                        <p class="text-sm font-medium text-slate-600">各人の負担額を指定してください</p>
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm font-medium text-slate-600">各人の負担額を指定してください</p>
+                            <button type="button" id="auto-complete-btn" class="text-sm bg-amber-100 text-amber-700 hover:bg-amber-200 font-medium py-1 px-3 rounded-lg transition-colors">
+                                補完
+                            </button>
+                        </div>
                         <div id="burden-inputs" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <!-- JSで動的に追加 -->
                         </div>
@@ -105,9 +113,14 @@
                     
                     <div id="error-message" class="text-red-500 text-sm"></div>
 
-                    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300">
-                        この内容で追加する
-                    </button>
+                    <div class="flex gap-2">
+                        <button type="submit" class="flex-1 bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300">
+                            この内容で追加する
+                        </button>
+                        <button type="button" id="reset-form-btn" class="bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors">
+                            リセット
+                        </button>
+                    </div>
                 </form>
             </section>
 
@@ -154,6 +167,9 @@
             const membersList = document.getElementById('members-list');
             const newMemberNameEl = document.getElementById('new-member-name');
             const addMemberBtn = document.getElementById('add-member-btn');
+            const resetMembersBtn = document.getElementById('reset-members-btn');
+            const resetFormBtn = document.getElementById('reset-form-btn');
+            const autoCompleteBtn = document.getElementById('auto-complete-btn');
 
             // --- アプリケーションの状態 ---
             let state = {
@@ -198,6 +214,13 @@
                     deleteMember(name);
                 }
             });
+
+            // リセットボタン
+            resetMembersBtn.addEventListener('click', () => resetMembers());
+            resetFormBtn.addEventListener('click', () => resetForm());
+
+            // 自動補完ボタン
+            autoCompleteBtn.addEventListener('click', () => autoComplete());
 
 
             // --- 関数 ---
@@ -393,6 +416,66 @@
                 form.reset();
                 switchMode('X');
                 errorMessage.textContent = '';
+            }
+
+            // 自動補完
+            function autoComplete() {
+                const total = parseFloat(amountEl.value) || 0;
+                const inputs = burdenInputsEl.querySelectorAll('.burden-input');
+
+                // 各負担額を取得
+                let filledSum = 0;
+                let emptyCount = 0;
+                let emptyInput = null;
+
+                inputs.forEach(input => {
+                    const val = parseFloat(input.value);
+                    if (isNaN(val) || input.value === '') {
+                        emptyCount++;
+                        emptyInput = input;
+                    } else {
+                        filledSum += val;
+                    }
+                });
+
+                // パターン1: 総額が空、全員分入力済み → 総額を計算
+                if (!amountEl.value && emptyCount === 0) {
+                    amountEl.value = filledSum;
+                }
+                // パターン2: 総額あり、1人だけ空 → その人を計算
+                else if (total > 0 && emptyCount === 1) {
+                    emptyInput.value = total - filledSum;
+                }
+            }
+
+            // メンバーリセット
+            async function resetMembers() {
+                // 会計がある場合は警告
+                if (state.transactions.length > 0) {
+                    showError('会計履歴があるため、メンバーをリセットできません。先に会計を削除してください。');
+                    return;
+                }
+
+                if (state.members.length === 0) return;
+
+                const { error } = await db.from('members').delete().neq('name', '');
+                if (error) {
+                    showError('リセットに失敗しました');
+                    return;
+                }
+
+                state.members = [];
+                renderMembers();
+                renderPaidByOptions();
+                renderBurdenInputs();
+                render();
+            }
+
+            // フォームリセット
+            function resetForm() {
+                form.reset();
+                renderBurdenInputs();
+                switchMode('X');
             }
 
             // エラー表示
