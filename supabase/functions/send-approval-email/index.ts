@@ -124,7 +124,7 @@ ${appUrl}
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "割り勘アプリ <noreply@warikane.app>",
+        from: "Warikane App <onboarding@resend.dev>",
         to: [to],
         subject: `🎊 ${name}ｻﾝ❗承認されましたヨ〜〜〜ッ‼️😆✨✨`,
         html: htmlContent,

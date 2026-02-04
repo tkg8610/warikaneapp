@@ -115,11 +115,11 @@
                 .single();
 
             if (existingRequest) {
-                requestForm.classList.add('hidden');
-
                 if (existingRequest.status === 'pending') {
+                    requestForm.classList.add('hidden');
                     alreadyRequested.classList.remove('hidden');
                 } else if (existingRequest.status === 'rejected') {
+                    requestForm.classList.add('hidden');
                     requestStatus.innerHTML = `
                         <div class="bg-red-50 text-red-700 p-4 rounded-lg">
                             <p class="font-medium">申請が拒否されました</p>
@@ -139,6 +139,11 @@
                         requestStatus.classList.add('hidden');
                         requestForm.classList.remove('hidden');
                     });
+                } else if (existingRequest.status === 'approved') {
+                    // 承認済みだがallowed_usersから削除された場合
+                    // 古い申請を削除して再申請可能にする
+                    await db.from('access_requests').delete().eq('email', user.email);
+                    // フォームはそのまま表示
                 }
             }
 

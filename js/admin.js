@@ -219,12 +219,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // allowed_usersから削除
         const { error } = await db.from('allowed_users').delete().eq('email', email);
         if (error) {
             showError('ユーザーの削除に失敗しました。');
             console.error(error);
             return;
         }
+
+        // access_requestsからも削除（再申請を可能にするため）
+        await db.from('access_requests').delete().eq('email', email);
 
         state.allowedUsers = state.allowedUsers.filter(u => u.email !== email);
         renderAllowedUsers();
@@ -235,6 +239,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function sendApprovalEmail(email, name) {
         try {
             const appUrl = window.location.origin + '/index.html';
+            console.log('メール送信開始:', { to: email, name, appUrl });
+
             const { data, error } = await db.functions.invoke('send-approval-email', {
                 body: {
                     to: email,
@@ -243,10 +249,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
+            console.log('Edge Function応答:', { data, error });
+
             if (error) {
                 console.error('メール送信エラー:', error);
                 return false;
             }
+
+            if (data && !data.success) {
+                console.error('メール送信失敗:', data.error);
+                return false;
+            }
+
             return true;
         } catch (err) {
             console.error('メール送信エラー:', err);
