@@ -265,7 +265,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderAccessRequests();
         loadAllowedUsers();
         showSuccess(`${request.email} を承認しました`);
-        }
     }
 
     // 申請を拒否

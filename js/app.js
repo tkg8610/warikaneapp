@@ -8,8 +8,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 認証成功後、ローディングを非表示にしてコンテンツを表示
     const loadingIndicator = document.getElementById('loading-indicator');
     const mainContent = document.querySelector('main');
+    const helpBtn = document.getElementById('help-btn');
     if (loadingIndicator) loadingIndicator.classList.add('hidden');
     if (mainContent) mainContent.classList.remove('hidden');
+    if (helpBtn) helpBtn.classList.remove('hidden');
 
     // 承認通知をチェック
     if (sessionStorage.getItem('pendingAccessRequest') === 'true') {
@@ -38,7 +40,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetMembersBtn = document.getElementById('reset-members-btn');
     const resetHistoryBtn = document.getElementById('reset-history-btn');
     const autoCompleteBtn = document.getElementById('auto-complete-btn');
-    const helpBtn = document.getElementById('help-btn');
     const helpModal = document.getElementById('help-modal');
     const closeHelpBtn = document.getElementById('close-help-btn');
     const editModal = document.getElementById('edit-modal');
@@ -283,7 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             modeXBtn.classList.add('text-slate-500');
             yModeFields.classList.remove('hidden');
         }
-         errorMessage.textContent = '';
+        errorMessage.textContent = '';
     }
 
     // 会計の追加
