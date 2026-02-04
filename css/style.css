@@ -108,3 +108,8 @@ input:focus, select:focus {
     background-color: #fee2e2;
     color: #dc2626;
 }
+
+/* コンテンツ非表示 */
+.hidden {
+    display: none !important;
+}

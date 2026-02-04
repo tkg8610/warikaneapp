@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = await Auth.requireAuth();
     if (!user) return;
 
+    // 認証成功後、ローディングを非表示にしてコンテンツを表示
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const mainContent = document.querySelector('main');
+    if (loadingIndicator) loadingIndicator.classList.add('hidden');
+    if (mainContent) mainContent.classList.remove('hidden');
+
     // ユーザー情報を表示
     displayUserInfo(user);
 
