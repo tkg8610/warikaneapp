@@ -21,16 +21,80 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        /* トースト通知アニメーション */
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        .animate-slide-out {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100%); }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
 
     <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-2xl">
         <!-- ヘッダー -->
-        <header class="text-center mb-8">
+        <header class="text-center mb-8 relative">
             <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">割り勘アプリ</h1>
             <p class="text-slate-500 mt-2">スマートに会計を記録し、瞬時に清算します。</p>
+            <button id="help-btn" class="absolute top-0 right-0 bg-blue-100 text-blue-600 hover:bg-blue-200 p-2 rounded-full transition-colors" title="使い方">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </button>
         </header>
+
+        <!-- 使い方モーダル -->
+        <div id="help-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-slate-900">使い方</h2>
+                        <button id="close-help-btn" class="text-slate-400 hover:text-slate-600 p-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="space-y-4 text-slate-700">
+                        <div>
+                            <h3 class="font-bold text-slate-800 mb-1">1. メンバーを追加</h3>
+                            <p class="text-sm">まず割り勘に参加するメンバーの名前を追加してください（最低2人）。</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 mb-1">2. 会計を記録</h3>
+                            <p class="text-sm">誰かが支払いをしたら、支払った人・項目・金額を入力して追加します。</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 mb-1">3. 割り勘モード</h3>
+                            <ul class="text-sm space-y-1 ml-4 list-disc">
+                                <li><strong>単純割り勘 (X)</strong>: 全員で均等に割り勘</li>
+                                <li><strong>個別割り勘 (Y)</strong>: 各人の負担額を個別に指定</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 mb-1">4. 補完機能（Yモード）</h3>
+                            <p class="text-sm">「補完」ボタンで自動計算できます：</p>
+                            <ul class="text-sm space-y-1 ml-4 list-disc">
+                                <li>全員分入力 → 総額を自動計算</li>
+                                <li>1人だけ空欄 → その人の負担額を自動計算</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 mb-1">5. 清算結果を確認</h3>
+                            <p class="text-sm">「清算結果」に誰が誰にいくら払えばよいか表示されます。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- トースト通知 -->
+        <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
         <main class="space-y-8">
             <!-- 0. メンバー管理エリア -->
@@ -170,6 +234,9 @@
             const resetMembersBtn = document.getElementById('reset-members-btn');
             const resetFormBtn = document.getElementById('reset-form-btn');
             const autoCompleteBtn = document.getElementById('auto-complete-btn');
+            const helpBtn = document.getElementById('help-btn');
+            const helpModal = document.getElementById('help-modal');
+            const closeHelpBtn = document.getElementById('close-help-btn');
 
             // --- アプリケーションの状態 ---
             let state = {
@@ -221,6 +288,19 @@
 
             // 自動補完ボタン
             autoCompleteBtn.addEventListener('click', () => autoComplete());
+
+            // ヘルプモーダル
+            helpBtn.addEventListener('click', () => {
+                helpModal.classList.remove('hidden');
+            });
+            closeHelpBtn.addEventListener('click', () => {
+                helpModal.classList.add('hidden');
+            });
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) {
+                    helpModal.classList.add('hidden');
+                }
+            });
 
 
             // --- 関数 ---
@@ -478,11 +558,31 @@
                 switchMode('X');
             }
 
-            // エラー表示
+            // エラー表示（トースト通知）
             function showError(message) {
+                // フォーム内エラー表示（従来の動作も維持）
                 errorMessage.textContent = message;
                 setTimeout(() => {
                     errorMessage.textContent = '';
+                }, 3000);
+
+                // トースト通知を表示
+                const toastContainer = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-in';
+                toast.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span>${message}</span>
+                    <button class="ml-auto hover:bg-red-600 rounded p-1" onclick="this.parentElement.remove()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                `;
+                toastContainer.appendChild(toast);
+
+                // 3秒後に自動で消える
+                setTimeout(() => {
+                    toast.classList.add('animate-slide-out');
+                    setTimeout(() => toast.remove(), 300);
                 }, 3000);
             }
 
