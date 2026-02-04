@@ -2,3 +2,24 @@
 .mcp.json
 memo.md
 image.png
+
+# 環境変数ファイル
+.env
+.env.local
+.env.*.local
+
+# Vercel
+.vercel
+
+# Node modules（将来的に使用する場合）
+node_modules/
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

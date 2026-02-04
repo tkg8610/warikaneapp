@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - 割り勘アプリ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md">
+        <!-- ロゴ・タイトル -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">割り勘アプリ</h1>
+            <p class="text-slate-500 mt-2">アカウントにログインして始めましょう</p>
+        </div>
+
+        <!-- ログインカード -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
+            <!-- タブ切り替え -->
+            <div class="flex border-b border-slate-200 mb-6">
+                <button id="login-tab" class="flex-1 px-4 py-2 font-semibold border-b-2 border-indigo-500 text-indigo-600">ログイン</button>
+                <button id="signup-tab" class="flex-1 px-4 py-2 font-semibold text-slate-500">新規登録</button>
+            </div>
+
+            <!-- エラーメッセージ -->
+            <div id="auth-error" class="hidden bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm"></div>
+
+            <!-- 成功メッセージ -->
+            <div id="auth-success" class="hidden bg-green-50 text-green-600 p-3 rounded-lg mb-4 text-sm"></div>
+
+            <!-- ログインフォーム -->
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="login-email" class="block text-sm font-medium text-slate-600 mb-1">メールアドレス</label>
+                    <input type="email" id="login-email" required
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="example@email.com">
+                </div>
+                <div>
+                    <label for="login-password" class="block text-sm font-medium text-slate-600 mb-1">パスワード</label>
+                    <input type="password" id="login-password" required
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="パスワードを入力">
+                </div>
+                <button type="submit" id="login-btn"
+                    class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    ログイン
+                </button>
+            </form>
+
+            <!-- サインアップフォーム -->
+            <form id="signup-form" class="space-y-4 hidden">
+                <div>
+                    <label for="signup-email" class="block text-sm font-medium text-slate-600 mb-1">メールアドレス</label>
+                    <input type="email" id="signup-email" required
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="example@email.com">
+                </div>
+                <div>
+                    <label for="signup-password" class="block text-sm font-medium text-slate-600 mb-1">パスワード</label>
+                    <input type="password" id="signup-password" required minlength="6"
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="6文字以上で入力">
+                </div>
+                <div>
+                    <label for="signup-password-confirm" class="block text-sm font-medium text-slate-600 mb-1">パスワード（確認）</label>
+                    <input type="password" id="signup-password-confirm" required minlength="6"
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="もう一度入力">
+                </div>
+                <button type="submit" id="signup-btn"
+                    class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    アカウント作成
+                </button>
+            </form>
+
+            <!-- 区切り線 -->
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-slate-200"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-slate-500">または</span>
+                </div>
+            </div>
+
+            <!-- Googleログインボタン -->
+            <button id="google-btn" class="google-btn w-full">
+                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                    <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18l-2.909-2.26c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z" fill="#34A853"/>
+                    <path d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.96H.957C.347 6.175 0 7.55 0 9.002c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                    <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.428 0 9.002 0 5.485 0 2.44 2.017.96 4.958L3.967 7.29c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335"/>
+                </svg>
+                Googleでログイン
+            </button>
+        </div>
+
+        <p class="text-center text-slate-500 text-sm mt-6">
+            &copy; 2024 Warikan App
+        </p>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 既にログイン済みならリダイレクト
+            await Auth.redirectIfAuthenticated();
+
+            // DOM要素
+            const loginTab = document.getElementById('login-tab');
+            const signupTab = document.getElementById('signup-tab');
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            const googleBtn = document.getElementById('google-btn');
+            const authError = document.getElementById('auth-error');
+            const authSuccess = document.getElementById('auth-success');
+
+            // タブ切り替え
+            loginTab.addEventListener('click', () => {
+                loginTab.classList.add('border-indigo-500', 'text-indigo-600');
+                loginTab.classList.remove('text-slate-500');
+                signupTab.classList.remove('border-indigo-500', 'text-indigo-600');
+                signupTab.classList.add('text-slate-500');
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                hideMessages();
+            });
+
+            signupTab.addEventListener('click', () => {
+                signupTab.classList.add('border-indigo-500', 'text-indigo-600');
+                signupTab.classList.remove('text-slate-500');
+                loginTab.classList.remove('border-indigo-500', 'text-indigo-600');
+                loginTab.classList.add('text-slate-500');
+                signupForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                hideMessages();
+            });
+
+            // メッセージ非表示
+            function hideMessages() {
+                authError.classList.add('hidden');
+                authSuccess.classList.add('hidden');
+            }
+
+            // エラー表示
+            function showError(message) {
+                authError.textContent = message;
+                authError.classList.remove('hidden');
+                authSuccess.classList.add('hidden');
+            }
+
+            // 成功表示
+            function showSuccess(message) {
+                authSuccess.textContent = message;
+                authSuccess.classList.remove('hidden');
+                authError.classList.add('hidden');
+            }
+
+            // ログインフォーム送信
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                const btn = document.getElementById('login-btn');
+
+                btn.disabled = true;
+                btn.textContent = 'ログイン中...';
+                hideMessages();
+
+                const { error } = await Auth.signIn(email, password);
+
+                if (error) {
+                    showError(getErrorMessage(error));
+                    btn.disabled = false;
+                    btn.textContent = 'ログイン';
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+
+            // サインアップフォーム送信
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const passwordConfirm = document.getElementById('signup-password-confirm').value;
+                const btn = document.getElementById('signup-btn');
+
+                if (password !== passwordConfirm) {
+                    showError('パスワードが一致しません。');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.textContent = 'アカウント作成中...';
+                hideMessages();
+
+                const { data, error } = await Auth.signUp(email, password);
+
+                if (error) {
+                    showError(getErrorMessage(error));
+                    btn.disabled = false;
+                    btn.textContent = 'アカウント作成';
+                } else {
+                    // メール確認が必要な場合
+                    if (data.user && !data.session) {
+                        showSuccess('確認メールを送信しました。メールのリンクをクリックしてアカウントを有効化してください。');
+                        btn.disabled = false;
+                        btn.textContent = 'アカウント作成';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                }
+            });
+
+            // Googleログイン
+            googleBtn.addEventListener('click', async () => {
+                googleBtn.disabled = true;
+                const { error } = await Auth.signInWithGoogle();
+                if (error) {
+                    showError(getErrorMessage(error));
+                    googleBtn.disabled = false;
+                }
+            });
+
+            // エラーメッセージを日本語化
+            function getErrorMessage(error) {
+                const messages = {
+                    'Invalid login credentials': 'メールアドレスまたはパスワードが正しくありません。',
+                    'Email not confirmed': 'メールアドレスが確認されていません。確認メールのリンクをクリックしてください。',
+                    'User already registered': 'このメールアドレスは既に登録されています。',
+                    'Password should be at least 6 characters': 'パスワードは6文字以上で入力してください。',
+                    'Unable to validate email address: invalid format': 'メールアドレスの形式が正しくありません。',
+                    'Signup requires a valid password': 'パスワードを入力してください。'
+                };
+                return messages[error.message] || error.message;
+            }
+        });
+    </script>
+</body>
+</html>
