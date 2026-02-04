@@ -113,8 +113,7 @@ const Auth = {
         // ホワイトリストチェック
         const { allowed, isAdmin } = await this.isEmailAllowed(user.email);
         if (!allowed) {
-            await this.signOut();
-            sessionStorage.setItem('auth_error', 'このアカウントは許可されていません');
+            window.location.href = 'request.html';
             return null;
         }
 

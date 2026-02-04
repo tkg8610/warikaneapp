@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アクセス申請 - 割り勘アプリ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md">
+        <!-- 警告アイコン -->
+        <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-600"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900">アクセス権限がありません</h1>
+            <p class="text-slate-500 mt-2">このアプリは許可されたユーザーのみ利用できます</p>
+        </div>
+
+        <!-- カード -->
+        <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
+            <!-- ユーザー情報 -->
+            <div class="bg-slate-50 p-4 rounded-lg mb-6">
+                <p class="text-sm text-slate-500">ログイン中のアカウント</p>
+                <p id="user-email" class="font-medium text-slate-800"></p>
+            </div>
+
+            <!-- 申請状態表示 -->
+            <div id="request-status" class="hidden mb-6">
+                <!-- JSで動的に表示 -->
+            </div>
+
+            <!-- 申請フォーム -->
+            <form id="request-form" class="space-y-4">
+                <div>
+                    <label for="request-name" class="block text-sm font-medium text-slate-600 mb-1">お名前</label>
+                    <input type="text" id="request-name" required
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        placeholder="山田 太郎">
+                </div>
+                <div>
+                    <label for="request-message" class="block text-sm font-medium text-slate-600 mb-1">申請理由（任意）</label>
+                    <textarea id="request-message" rows="3"
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        placeholder="利用目的などを入力してください"></textarea>
+                </div>
+                <button type="submit" id="submit-btn"
+                    class="w-full bg-amber-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    アクセスを申請する
+                </button>
+            </form>
+
+            <!-- 申請済み表示 -->
+            <div id="already-requested" class="hidden text-center py-4">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <p class="font-medium text-slate-800">申請を受け付けました</p>
+                <p class="text-sm text-slate-500 mt-1">管理者の承認をお待ちください</p>
+            </div>
+
+            <!-- 区切り -->
+            <div class="border-t border-slate-200 mt-6 pt-4">
+                <button id="logout-btn" class="w-full text-slate-500 hover:text-slate-700 text-sm font-medium py-2">
+                    別のアカウントでログインする
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 認証チェック（リダイレクトなし）
+            const user = await Auth.getCurrentUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // 許可済みユーザーはメインページへ
+            const { allowed } = await Auth.isEmailAllowed(user.email);
+            if (allowed) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // ユーザー情報表示
+            document.getElementById('user-email').textContent = user.email;
+
+            // DOM要素
+            const requestForm = document.getElementById('request-form');
+            const alreadyRequested = document.getElementById('already-requested');
+            const requestStatus = document.getElementById('request-status');
+            const submitBtn = document.getElementById('submit-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            // 既存の申請をチェック
+            const { data: existingRequest } = await db
+                .from('access_requests')
+                .select('*')
+                .eq('email', user.email)
+                .single();
+
+            if (existingRequest) {
+                requestForm.classList.add('hidden');
+
+                if (existingRequest.status === 'pending') {
+                    alreadyRequested.classList.remove('hidden');
+                } else if (existingRequest.status === 'rejected') {
+                    requestStatus.innerHTML = `
+                        <div class="bg-red-50 text-red-700 p-4 rounded-lg">
+                            <p class="font-medium">申請が拒否されました</p>
+                            <p class="text-sm mt-1">管理者にお問い合わせください</p>
+                        </div>
+                    `;
+                    requestStatus.classList.remove('hidden');
+                }
+            }
+
+            // 申請フォーム送信
+            requestForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const name = document.getElementById('request-name').value.trim();
+                const message = document.getElementById('request-message').value.trim();
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = '送信中...';
+
+                const { error } = await db.from('access_requests').insert({
+                    email: user.email,
+                    name,
+                    message
+                });
+
+                if (error) {
+                    console.error(error);
+                    alert('申請に失敗しました。もう一度お試しください。');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'アクセスを申請する';
+                    return;
+                }
+
+                requestForm.classList.add('hidden');
+                alreadyRequested.classList.remove('hidden');
+            });
+
+            // ログアウト
+            logoutBtn.addEventListener('click', () => Auth.signOut());
+        });
+    </script>
+</body>
+</html>

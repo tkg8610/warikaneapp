@@ -45,25 +45,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editBurdenFields = document.getElementById('edit-burden-fields');
     const editBurdenInputs = document.getElementById('edit-burden-inputs');
     const logoutBtn = document.getElementById('logout-btn');
-    const allowedUsersList = document.getElementById('allowed-users-list');
-    const newUserEmailEl = document.getElementById('new-user-email');
-    const addUserBtn = document.getElementById('add-user-btn');
-
     // --- アプリケーションの状態 ---
     let state = {
         currentMode: 'X',
         transactions: [],
         members: [],
         userId: user.id,
-        isAdmin: user.isAdmin || false,
-        allowedUsers: []
+        isAdmin: user.isAdmin || false
     };
 
-    // 管理者の場合、管理セクションを表示
+    // 管理者の場合、管理画面リンクを表示
     if (state.isAdmin) {
-        const adminSection = document.getElementById('admin-section');
-        if (adminSection) adminSection.classList.remove('hidden');
-        loadAllowedUsers();
+        const adminLink = document.getElementById('admin-link');
+        if (adminLink) adminLink.classList.remove('hidden');
     }
 
     // --- イベントリスナー ---
@@ -71,27 +65,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ログアウト
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => Auth.signOut());
-    }
-
-    // ユーザー管理（管理者のみ）
-    if (addUserBtn) {
-        addUserBtn.addEventListener('click', () => addAllowedUser());
-    }
-    if (newUserEmailEl) {
-        newUserEmailEl.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addAllowedUser();
-            }
-        });
-    }
-    if (allowedUsersList) {
-        allowedUsersList.addEventListener('click', (e) => {
-            if (e.target.closest('.delete-user-btn')) {
-                const email = e.target.closest('.delete-user-btn').dataset.email;
-                deleteAllowedUser(email);
-            }
-        });
     }
 
     // モード切り替え
@@ -697,100 +670,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             `).join('');
         }
-    }
-
-    // --- 管理者機能 ---
-
-    // 許可ユーザー一覧を読み込み
-    async function loadAllowedUsers() {
-        const { data, error } = await db.from('allowed_users').select('*').order('created_at');
-        if (error) {
-            console.error('Failed to load allowed users:', error);
-            return;
-        }
-        state.allowedUsers = data || [];
-        renderAllowedUsers();
-    }
-
-    // 許可ユーザー一覧を描画
-    function renderAllowedUsers() {
-        if (!allowedUsersList) return;
-
-        if (state.allowedUsers.length === 0) {
-            allowedUsersList.innerHTML = '<p class="text-slate-500">許可ユーザーがいません</p>';
-            return;
-        }
-
-        allowedUsersList.innerHTML = state.allowedUsers.map(u => `
-            <div class="flex items-center justify-between p-2 bg-amber-50 rounded-lg">
-                <div class="flex items-center gap-2">
-                    <span class="text-sm">${u.email}</span>
-                    ${u.is_admin ? '<span class="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">管理者</span>' : ''}
-                </div>
-                ${u.email !== user.email ? `
-                    <button data-email="${u.email}" class="delete-user-btn p-1 text-slate-400 hover:text-red-500 hover:bg-red-100 rounded transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                ` : ''}
-            </div>
-        `).join('');
-    }
-
-    // ユーザーを追加
-    async function addAllowedUser() {
-        if (!newUserEmailEl) return;
-        const email = newUserEmailEl.value.trim().toLowerCase();
-
-        if (!email) {
-            showError('メールアドレスを入力してください。');
-            return;
-        }
-
-        // 簡易メールバリデーション
-        if (!email.includes('@')) {
-            showError('有効なメールアドレスを入力してください。');
-            return;
-        }
-
-        // 既に存在するか確認
-        if (state.allowedUsers.some(u => u.email === email)) {
-            showError('このユーザーは既に追加されています。');
-            return;
-        }
-
-        const { data, error } = await db.from('allowed_users').insert({
-            email,
-            is_admin: false,
-            added_by: user.email
-        }).select().single();
-
-        if (error) {
-            showError('ユーザーの追加に失敗しました。');
-            console.error(error);
-            return;
-        }
-
-        state.allowedUsers.push(data);
-        newUserEmailEl.value = '';
-        renderAllowedUsers();
-    }
-
-    // ユーザーを削除
-    async function deleteAllowedUser(email) {
-        if (email === user.email) {
-            showError('自分自身は削除できません。');
-            return;
-        }
-
-        const { error } = await db.from('allowed_users').delete().eq('email', email);
-        if (error) {
-            showError('ユーザーの削除に失敗しました。');
-            console.error(error);
-            return;
-        }
-
-        state.allowedUsers = state.allowedUsers.filter(u => u.email !== email);
-        renderAllowedUsers();
     }
 
     // 初期読み込み
