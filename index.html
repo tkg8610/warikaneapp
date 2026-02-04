@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>割り勘アプリ</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -130,6 +131,13 @@
     </div>
 
     <script>
+        // --- Supabase初期化 ---
+        const { createClient } = supabase;
+        const db = createClient(
+            'https://yzwdtpzmqwpezqhpfedc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6d2R0cHptcXdwZXpxaHBmZWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxODAyMjcsImV4cCI6MjA4NTc1NjIyN30.8wcne9jT3tfLUGYjxZuGwM_QkctFmjFsHycjxUqkp-0'
+        );
+
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM要素の取得 ---
             const modeXBtn = document.getElementById('mode-x-btn');
@@ -169,7 +177,7 @@
             // 履歴リストのクリック（削除処理）
             historyList.addEventListener('click', (e) => {
                 if (e.target.closest('.delete-btn')) {
-                    const id = Number(e.target.closest('.delete-btn').dataset.id);
+                    const id = e.target.closest('.delete-btn').dataset.id;
                     deleteTransaction(id);
                 }
             });
@@ -194,8 +202,31 @@
 
             // --- 関数 ---
 
+            // Supabaseからデータ読み込み
+            async function loadData() {
+                const { data: members } = await db.from('members').select('name').order('created_at');
+                const { data: transactions } = await db.from('transactions').select('*').order('created_at');
+
+                state.members = members ? members.map(m => m.name) : [];
+                state.transactions = transactions ? transactions.map(t => ({
+                    id: t.id,
+                    mode: t.mode,
+                    paidBy: t.paid_by,
+                    item: t.item,
+                    amount: Number(t.amount),
+                    memberCount: t.member_count,
+                    membersAtTime: t.members_at_time || [],
+                    burden: t.burden || {}
+                })) : [];
+
+                renderMembers();
+                renderPaidByOptions();
+                renderBurdenInputs();
+                render();
+            }
+
             // メンバー追加
-            function addMember() {
+            async function addMember() {
                 const name = newMemberNameEl.value.trim();
                 if (!name) {
                     showError('名前を入力してください。');
@@ -205,6 +236,13 @@
                     showError('同じ名前のメンバーが既に存在します。');
                     return;
                 }
+
+                const { error } = await db.from('members').insert({ name });
+                if (error) {
+                    showError('保存に失敗しました');
+                    return;
+                }
+
                 state.members.push(name);
                 newMemberNameEl.value = '';
                 renderMembers();
@@ -214,7 +252,7 @@
             }
 
             // メンバー削除
-            function deleteMember(name) {
+            async function deleteMember(name) {
                 // このメンバーが関連する取引があるか確認
                 const hasTransactions = state.transactions.some(t =>
                     t.paidBy === name || (t.burden && name in t.burden)
@@ -223,6 +261,13 @@
                     showError('このメンバーには関連する会計があるため削除できません。');
                     return;
                 }
+
+                const { error } = await db.from('members').delete().eq('name', name);
+                if (error) {
+                    showError('削除に失敗しました');
+                    return;
+                }
+
                 state.members = state.members.filter(m => m !== name);
                 renderMembers();
                 renderPaidByOptions();
@@ -283,7 +328,7 @@
             }
 
             // 会計の追加
-            function addTransaction() {
+            async function addTransaction() {
                 if (state.members.length < 2) {
                     showError('最低2人のメンバーを追加してください。');
                     return;
@@ -299,14 +344,14 @@
                     return;
                 }
 
-                const newTransaction = {
-                    id: Date.now(),
+                const dbRecord = {
                     mode: state.currentMode,
-                    paidBy,
+                    paid_by: paidBy,
                     item,
                     amount,
-                    memberCount: state.members.length,
-                    membersAtTime: [...state.members]
+                    member_count: state.members.length,
+                    members_at_time: [...state.members],
+                    burden: null
                 };
 
                 if (state.currentMode === 'Y') {
@@ -324,10 +369,26 @@
                          showError('各人の負担額の合計が総額と一致しません。');
                         return;
                     }
-                    newTransaction.burden = burden;
+                    dbRecord.burden = burden;
                 }
 
-                state.transactions.push(newTransaction);
+                const { data, error } = await db.from('transactions').insert(dbRecord).select().single();
+                if (error) {
+                    showError('保存に失敗しました');
+                    return;
+                }
+
+                state.transactions.push({
+                    id: data.id,
+                    mode: data.mode,
+                    paidBy: data.paid_by,
+                    item: data.item,
+                    amount: Number(data.amount),
+                    memberCount: data.member_count,
+                    membersAtTime: data.members_at_time || [],
+                    burden: data.burden || {}
+                });
+
                 render();
                 form.reset();
                 switchMode('X');
@@ -343,7 +404,12 @@
             }
 
             // 会計の削除
-            function deleteTransaction(id) {
+            async function deleteTransaction(id) {
+                const { error } = await db.from('transactions').delete().eq('id', id);
+                if (error) {
+                    showError('削除に失敗しました');
+                    return;
+                }
                 state.transactions = state.transactions.filter(t => t.id !== id);
                 render();
             }
@@ -465,11 +531,8 @@
                 }
             }
 
-            // 初期描画
-            renderMembers();
-            renderPaidByOptions();
-            renderBurdenInputs();
-            render();
+            // 初期読み込み
+            loadData();
         });
     </script>
 </body>
