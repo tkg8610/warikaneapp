@@ -22,17 +22,8 @@
 
         <!-- ログインカード -->
         <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
-            <!-- タブ切り替え -->
-            <div class="flex border-b border-slate-200 mb-6">
-                <button id="login-tab" class="flex-1 px-4 py-2 font-semibold border-b-2 border-indigo-500 text-indigo-600">ログイン</button>
-                <button id="signup-tab" class="flex-1 px-4 py-2 font-semibold text-slate-500">新規登録</button>
-            </div>
-
             <!-- エラーメッセージ -->
             <div id="auth-error" class="hidden bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm"></div>
-
-            <!-- 成功メッセージ -->
-            <div id="auth-success" class="hidden bg-green-50 text-green-600 p-3 rounded-lg mb-4 text-sm"></div>
 
             <!-- ログインフォーム -->
             <form id="login-form" class="space-y-4">
@@ -51,32 +42,6 @@
                 <button type="submit" id="login-btn"
                     class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     ログイン
-                </button>
-            </form>
-
-            <!-- サインアップフォーム -->
-            <form id="signup-form" class="space-y-4 hidden">
-                <div>
-                    <label for="signup-email" class="block text-sm font-medium text-slate-600 mb-1">メールアドレス</label>
-                    <input type="email" id="signup-email" required
-                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="example@email.com">
-                </div>
-                <div>
-                    <label for="signup-password" class="block text-sm font-medium text-slate-600 mb-1">パスワード</label>
-                    <input type="password" id="signup-password" required minlength="6"
-                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="6文字以上で入力">
-                </div>
-                <div>
-                    <label for="signup-password-confirm" class="block text-sm font-medium text-slate-600 mb-1">パスワード（確認）</label>
-                    <input type="password" id="signup-password-confirm" required minlength="6"
-                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="もう一度入力">
-                </div>
-                <button type="submit" id="signup-btn"
-                    class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    アカウント作成
                 </button>
             </form>
 
@@ -125,53 +90,14 @@
             }
 
             // DOM要素
-            const loginTab = document.getElementById('login-tab');
-            const signupTab = document.getElementById('signup-tab');
             const loginForm = document.getElementById('login-form');
-            const signupForm = document.getElementById('signup-form');
             const googleBtn = document.getElementById('google-btn');
             const authError = document.getElementById('auth-error');
-            const authSuccess = document.getElementById('auth-success');
-
-            // タブ切り替え
-            loginTab.addEventListener('click', () => {
-                loginTab.classList.add('border-indigo-500', 'text-indigo-600');
-                loginTab.classList.remove('text-slate-500');
-                signupTab.classList.remove('border-indigo-500', 'text-indigo-600');
-                signupTab.classList.add('text-slate-500');
-                loginForm.classList.remove('hidden');
-                signupForm.classList.add('hidden');
-                hideMessages();
-            });
-
-            signupTab.addEventListener('click', () => {
-                signupTab.classList.add('border-indigo-500', 'text-indigo-600');
-                signupTab.classList.remove('text-slate-500');
-                loginTab.classList.remove('border-indigo-500', 'text-indigo-600');
-                loginTab.classList.add('text-slate-500');
-                signupForm.classList.remove('hidden');
-                loginForm.classList.add('hidden');
-                hideMessages();
-            });
-
-            // メッセージ非表示
-            function hideMessages() {
-                authError.classList.add('hidden');
-                authSuccess.classList.add('hidden');
-            }
 
             // エラー表示
             function showError(message) {
                 authError.textContent = message;
                 authError.classList.remove('hidden');
-                authSuccess.classList.add('hidden');
-            }
-
-            // 成功表示
-            function showSuccess(message) {
-                authSuccess.textContent = message;
-                authSuccess.classList.remove('hidden');
-                authError.classList.add('hidden');
             }
 
             // ログインフォーム送信
@@ -183,7 +109,7 @@
 
                 btn.disabled = true;
                 btn.textContent = 'ログイン中...';
-                hideMessages();
+                authError.classList.add('hidden');
 
                 const { error } = await Auth.signIn(email, password);
 
@@ -193,41 +119,6 @@
                     btn.textContent = 'ログイン';
                 } else {
                     window.location.href = 'index.html';
-                }
-            });
-
-            // サインアップフォーム送信
-            signupForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('signup-email').value;
-                const password = document.getElementById('signup-password').value;
-                const passwordConfirm = document.getElementById('signup-password-confirm').value;
-                const btn = document.getElementById('signup-btn');
-
-                if (password !== passwordConfirm) {
-                    showError('パスワードが一致しません。');
-                    return;
-                }
-
-                btn.disabled = true;
-                btn.textContent = 'アカウント作成中...';
-                hideMessages();
-
-                const { data, error } = await Auth.signUp(email, password);
-
-                if (error) {
-                    showError(getErrorMessage(error));
-                    btn.disabled = false;
-                    btn.textContent = 'アカウント作成';
-                } else {
-                    // メール確認が必要な場合
-                    if (data.user && !data.session) {
-                        showSuccess('確認メールを送信しました。メールのリンクをクリックしてアカウントを有効化してください。');
-                        btn.disabled = false;
-                        btn.textContent = 'アカウント作成';
-                    } else {
-                        window.location.href = 'index.html';
-                    }
                 }
             });
 
@@ -245,11 +136,7 @@
             function getErrorMessage(error) {
                 const messages = {
                     'Invalid login credentials': 'メールアドレスまたはパスワードが正しくありません。',
-                    'Email not confirmed': 'メールアドレスが確認されていません。確認メールのリンクをクリックしてください。',
-                    'User already registered': 'このメールアドレスは既に登録されています。',
-                    'Password should be at least 6 characters': 'パスワードは6文字以上で入力してください。',
-                    'Unable to validate email address: invalid format': 'メールアドレスの形式が正しくありません。',
-                    'Signup requires a valid password': 'パスワードを入力してください。'
+                    'Email not confirmed': 'メールアドレスが確認されていません。確認メールのリンクをクリックしてください。'
                 };
                 return messages[error.message] || error.message;
             }
